@@ -5,6 +5,7 @@ import express, { NextFunction, Request, Response } from 'express'
 import cors from 'cors'
 import http from 'http'
 import { Server } from 'socket.io'
+import Sender from './sender'
 
 const app = express()
 
@@ -35,5 +36,29 @@ app.use((error: Error, request: Request, response: Response, next: NextFunction)
 app.get('/', (req: Request, res: Response) => {
 	return res.json({ 'Online': true, 'Server': 'UP' })
 })
+
+const sender = new Sender()
+
+app.get('/status', (req: Request, res: Response) => {
+	return res.send({
+		qr_code: sender.qrCode,
+		connected: sender.isConnected
+	})
+})
+
+app.post('/send', async (req: Request, res: Response) => {
+	try {
+		const { number, body } = req.body
+
+		await sender.sendText(number, body)
+
+		return res.json()
+	} catch (error) {
+		console.error(error)
+		return res.status(500).json({ status: 'error', message: error })
+	}
+})
+
+
 
 serverHttp.listen(process.env.PORT || 3334, () => console.log(`Server is running on PORT ${process.env.PORT} `))
