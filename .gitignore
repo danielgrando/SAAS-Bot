@@ -104,4 +104,6 @@ dist
 # TernJS port file
 .tern-port
 
-./tokens
+tokens
+
+.env

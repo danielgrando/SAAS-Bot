@@ -11,8 +11,8 @@ class Sender {
   private connected: boolean
   private qr: QRCode
 
-  constructor() {
-    this.initialize()
+  constructor(storeId: string) {
+    this.initialize(storeId)
   }
 
   get isConnected(): boolean {
@@ -36,7 +36,7 @@ class Sender {
     await this.client.sendText(phoneNumber, body)
   }
 
-  private initialize() {
+  private initialize(storeId: string) {
     const qr = (base64Qr: string, asciiQr: string, attempts: number, urlCode: string) => {
       this.qr = { base64Qr, attempts }
     }
@@ -53,7 +53,7 @@ class Sender {
       })
     }
 
-    create('new-store-connection', qr, status)
+    create(storeId, qr, status)
       .then((client) => start(client))
       .catch((error) => console.error(error))
   }
