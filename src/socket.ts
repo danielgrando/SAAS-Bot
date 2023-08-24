@@ -1,6 +1,7 @@
 import path from "path";
 import { create, Whatsapp, Message, SocketState } from 'venom-bot'
-const fs = require('fs');
+import { SaasService } from "./services/SaasService";
+import fs from 'fs'
 
 export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void }) => {
   io.on("connection", (socket) => {
@@ -9,15 +10,15 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
     const createSession = (storeId: string) => {
 
       create(storeId,
-        (base64Qr, asciiQR,) => {
+        (base64Qr) => {
           var matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
-            response = {};
+            response: any = {};
 
           if (matches.length !== 3) {
             return new Error('Invalid input string');
           }
           response.type = matches[1]
-          response.data = new Buffer.from(matches[2], 'base64')
+          response.data = Buffer.from(matches[2], 'base64')
 
           var imageBuffer = response;
           require('fs').writeFile(
@@ -35,22 +36,50 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
         .then((client) => {
           start(client);
         })
-        .catch((erro) => {
-          console.log(erro);
+        .catch((error) => {
+          console.log(error);
         });
-
-      console.log("Criando a sessão", storeId)
-
 
       function start(client: Whatsapp) {
         client.onStateChange((state) => {
           socket.emit('server:message', 'Status: ' + state)
           console.log('State changed: ' + state)
         })
-      }
 
+        client.onMessage(async (message) => {
+          const saasService = new SaasService()
+
+          const resultStore: any = await saasService.getStore(storeId)
+          if (resultStore?.error) {
+            throw new Error(resultStore.error)
+          }
+
+          if (!message.isGroupMsg) {
+            client
+              .sendText(message.from, `
+              👋 Olá, como vai?
+              Eu sou o *assistente virtual* da ${resultStore.name}.
+              *Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️
+              -----------------------------------
+              1️⃣ - Ver cardápio
+              2️⃣ - Fazer pedido
+              3️⃣ - Promoções
+              4️⃣ - Endereço
+              5️⃣ - Horários de funcionamento
+              6️⃣ - Finalizar Atendimento
+              `)
+              .then((result) => {
+                console.log('Result: ', result)
+              })
+              .catch((erro) => {
+                console.error('Error when sending: ', erro)
+              });
+          }
+        });
+      }
     }
 
+    // https://emojiterra.com/pt/
     socket.on('client:create-session', (storeId: string) => {
       createSession(storeId)
       setTimeout(() => {

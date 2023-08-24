@@ -6,7 +6,7 @@ import cors from 'cors'
 import http from 'http'
 import { Server } from 'socket.io'
 import Sender from './sender'
-import sockets from './sockets'
+import socket from './socket'
 
 const app = express()
 
@@ -19,7 +19,7 @@ export const io = new Server(serverHttp, {
 	}
 })
 
-sockets(io)
+socket(io)
 
 app.use(cors())
 
