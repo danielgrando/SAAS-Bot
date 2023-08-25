@@ -22,7 +22,6 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
     console.log('User connected:', socket.id)
 
     const createSession = (storeId: string) => {
-
       create(storeId,
         (base64Qr) => {
           var matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
@@ -56,7 +55,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
 
       function start(client: Whatsapp) {
         client.onStateChange((state) => {
-          socket.emit('server:message', 'Status: ' + state)
+          socket.emit('server:status', 'Status: ' + state)
           console.log('State changed: ' + state)
         })
 
@@ -68,10 +67,18 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
             throw new Error(resultStore.error)
           }
 
-          const { name, openClose, latitude, longitude }: IStore = resultStore.data
+          const { name, openClose, latitude, longitude }: IStore = resultStore?.data
 
-          if (!message.isGroupMsg) {
-            client.sendText(message.from, `
+          const messageClient = message.body.trim()
+          const isMsgValid = /[1|2|3|4|5]/.test(messageClient)
+
+          if (!isMsgValid) {
+            client.sendText(message.from, '❌ *Digite uma opção válida, por favor.* \n⚠️ ```APENAS UMA OPÇÃO POR VEZ``` ⚠️')
+          } else if (!message.isGroupMsg) {
+            return
+          }
+
+          client.sendText(message.from, `
               👋 Olá, como vai?
               Eu sou o *assistente virtual* da *${name}*.
               *Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️
@@ -82,13 +89,9 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
               4️⃣ - Horários de funcionamento
               5️⃣ - Finalizar Atendimento
               `)
-              .then((result) => {
-                console.log('Result: ', result)
-              })
-              .catch((error) => {
-                console.error('Error when sending: ', error)
-              });
-          }
+            .then((result) => {
+              console.log('Result: ', result)
+            })
 
           const choices = {
             '1': async () => {
@@ -97,8 +100,12 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                 throw new Error(resultStoreMenu.error)
               }
 
+              if (!resultStoreMenu?.data?.name) {
+                client.sendText(message.from, `Ainda não cadastramos nosso cardápio! 🙁}`)
+              }
+
               client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos!
-              ${process.env.URL + '/' + resultStoreMenu.data.name}`)
+              ${process.env.URL + '/' + resultStoreMenu?.data?.name}`)
             },
             '2': async () => {
               const resultStorePromotions = await saasService.getPromotionsByStoreId(storeId)
@@ -139,7 +146,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
 
     })
 
-    socket.on('client:qrCode', (storeId) => {
+    socket.on('client:qrCode', (storeId: string) => {
       const qrCode = fs.readFileSync(path.resolve(storeId + '.png'), { encoding: 'base64' });
       socket.emit('server:qrCode', 'data:image/png;base64,' + qrCode)
     })
@@ -152,7 +159,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
     })
 
 
-    socket.on('client:delete-session', (storeId) => {
+    socket.on('client:delete-session', (storeId: string) => {
       const files = './tokens/' + storeId
       const qrcodes = storeId + '.png'
       fs.unlinkSync(files)
