@@ -3,6 +3,20 @@ import { create, Whatsapp, Message, SocketState } from 'venom-bot'
 import { SaasService } from "./services/SaasService";
 import fs from 'fs'
 
+interface IStore {
+  id: string
+  name: string
+  email: string
+  type: string
+  logo: string
+  frontCover: string
+  status?: boolean | null
+  openClose?: any
+  latitude: string
+  longitude: string
+  settings?: any
+}
+
 export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void }) => {
   io.on("connection", (socket) => {
     console.log('User connected:', socket.id)
@@ -49,37 +63,73 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
         client.onMessage(async (message) => {
           const saasService = new SaasService()
 
-          const resultStore: any = await saasService.getStore(storeId)
+          const resultStore = await saasService.getStore(storeId)
           if (resultStore?.error) {
             throw new Error(resultStore.error)
           }
 
+          const { name, openClose, latitude, longitude }: IStore = resultStore.data
+
           if (!message.isGroupMsg) {
-            client
-              .sendText(message.from, `
+            client.sendText(message.from, `
               👋 Olá, como vai?
-              Eu sou o *assistente virtual* da ${resultStore.name}.
+              Eu sou o *assistente virtual* da *${name}*.
               *Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️
-              -----------------------------------
-              1️⃣ - Ver cardápio
-              2️⃣ - Fazer pedido
-              3️⃣ - Promoções
-              4️⃣ - Endereço
-              5️⃣ - Horários de funcionamento
-              6️⃣ - Finalizar Atendimento
+              ----------------------------------------
+              1️⃣ - Ver cardápio/Fazer pedido
+              2️⃣ - Promoções
+              3️⃣ - Endereço
+              4️⃣ - Horários de funcionamento
+              5️⃣ - Finalizar Atendimento
               `)
               .then((result) => {
                 console.log('Result: ', result)
               })
-              .catch((erro) => {
-                console.error('Error when sending: ', erro)
+              .catch((error) => {
+                console.error('Error when sending: ', error)
               });
           }
-        });
+
+          const choices = {
+            '1': async () => {
+              const resultStoreMenu = await saasService.getMenuByStoreId(storeId)
+              if (resultStoreMenu?.error) {
+                throw new Error(resultStoreMenu.error)
+              }
+
+              client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos!
+              ${process.env.URL + '/' + resultStoreMenu.data.name}`)
+            },
+            '2': async () => {
+              const resultStorePromotions = await saasService.getPromotionsByStoreId(storeId)
+              if (resultStorePromotions?.error) {
+                throw new Error(resultStorePromotions.error)
+              }
+              //TODO Formatter in text and send filters started e active to true ✅
+
+              client.sendText(message.from, `${resultStorePromotions.data.items}`)
+            },
+            '3': () => {
+              //TODO Get address with latitude and longitude 🗺️ 📍 
+
+              client.sendText(message.from, `${''}`)
+            },
+            '4': () => {
+              //TODO Formatter
+
+              client.sendText(message.from, `Nossos horários de funcionamento são: ${openClose}`)
+            },
+            '5': () => {
+              client.sendText(message.from, `🔚 *Atendimento encerrado* 🔚`)
+            }
+          }
+
+          await choices[message.body]
+        })
       }
     }
 
-    // https://emojiterra.com/pt/
+    // https://emojiterra.com/pt/ ❌⚠️
     socket.on('client:create-session', (storeId: string) => {
       createSession(storeId)
       setTimeout(() => {
