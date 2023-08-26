@@ -57,7 +57,7 @@ class SaasService {
         headers: {
           'Content-Type': 'application/json'
         },
-        params: { storeId }
+        params: { storeId, active: true }
       })
 
       printInfoMessage('Successful request! 🚀')

@@ -60,78 +60,91 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
         })
 
         client.onMessage(async (message) => {
-          const saasService = new SaasService()
+          let stage: string = '0'
 
-          const resultStore = await saasService.getStore(storeId)
-          if (resultStore?.error) {
-            throw new Error(resultStore.error)
-          }
+          if (!message.isGroupMsg) {
+            const saasService = new SaasService()
 
-          const { name, openClose, latitude, longitude }: IStore = resultStore?.data
+            const resultStore = await saasService.getStore(storeId)
+            if (resultStore?.error) {
+              throw new Error(resultStore.error)
+            }
 
-          const messageClient = message.body.trim()
-          const isMsgValid = /[1|2|3|4|5]/.test(messageClient)
+            const { name, openClose, latitude, longitude }: IStore = resultStore?.data
 
-          if (!isMsgValid) {
-            client.sendText(message.from, '❌ *Digite uma opção válida, por favor.* \n⚠️ ```APENAS UMA OPÇÃO POR VEZ``` ⚠️')
-          } else if (!message.isGroupMsg) {
-            return
-          }
+            const choices = {
+              '0': () => {
+                client.sendText(message.from, `
+                  👋 Olá, como vai?
+                  Eu sou o *assistente virtual* da *${name}*.
+                  *Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️
+                  ----------------------------------------
+                  1️⃣ - Ver cardápio/Fazer pedido
+                  2️⃣ - Promoções
+                  3️⃣ - Endereço
+                  4️⃣ - Horários de funcionamento
+                  5️⃣ - Finalizar Atendimento
+                  `)
+                  .then((result) => {
+                    console.log('Result: ', result)
+                  })
+                stage = ''
+              },
+              '1': async () => {
+                const resultStoreMenu = await saasService.getMenuByStoreId(storeId)
+                if (resultStoreMenu?.error) {
+                  throw new Error(resultStoreMenu.error)
+                }
 
-          client.sendText(message.from, `
-              👋 Olá, como vai?
-              Eu sou o *assistente virtual* da *${name}*.
-              *Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️
-              ----------------------------------------
-              1️⃣ - Ver cardápio/Fazer pedido
-              2️⃣ - Promoções
-              3️⃣ - Endereço
-              4️⃣ - Horários de funcionamento
-              5️⃣ - Finalizar Atendimento
-              `)
-            .then((result) => {
-              console.log('Result: ', result)
-            })
+                if (!resultStoreMenu?.data?.name) {
+                  client.sendText(message.from, `Ainda não cadastramos nosso cardápio! 🙁}`)
+                }
 
-          const choices = {
-            '1': async () => {
-              const resultStoreMenu = await saasService.getMenuByStoreId(storeId)
-              if (resultStoreMenu?.error) {
-                throw new Error(resultStoreMenu.error)
+                client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos!
+                ${process.env.URL + '/' + resultStoreMenu?.data?.name}`)
+              },
+              '2': async () => {
+                const resultStorePromotions = await saasService.getPromotionsByStoreId(storeId)
+                if (resultStorePromotions?.error) {
+                  throw new Error(resultStorePromotions.error)
+                }
+                //TODO Test formatter in text  ✅
+
+                client.sendText(message.from, `✅ ${resultStorePromotions?.data?.items.map((promotion: any) => { promotion.item.name, 'De:', promotion.price, 'Por:', promotion.discountPrice })}`)
+              },
+              '3': () => {
+                //TODO Get address with latitude and longitude 🗺️ 📍 
+
+                client.sendText(message.from, `${'🗺️ 📍'}`)
+              },
+              '4': () => {
+                //TODO Formatter
+
+                client.sendText(message.from, `Nossos horários de funcionamento são: ${openClose}`)
+              },
+              '5': () => {
+                client.sendText(message.from, `🔚 *Atendimento encerrado* 🔚`)
               }
+            }
 
-              if (!resultStoreMenu?.data?.name) {
-                client.sendText(message.from, `Ainda não cadastramos nosso cardápio! 🙁}`)
+            if (stage !== '0') {
+              const messageClient = message.body.trim()
+              const isMsgValid = /[1|2|3|4|5]/.test(messageClient)
+              if (!isMsgValid) {
+                client.sendText(message.from, '❌ *Digite uma opção válida, por favor.* \n⚠️ ```APENAS UMA OPÇÃO POR VEZ``` ⚠️')
+              } else if (!message.isGroupMsg) {
+                return
               }
+            }
 
-              client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos!
-              ${process.env.URL + '/' + resultStoreMenu?.data?.name}`)
-            },
-            '2': async () => {
-              const resultStorePromotions = await saasService.getPromotionsByStoreId(storeId)
-              if (resultStorePromotions?.error) {
-                throw new Error(resultStorePromotions.error)
-              }
-              //TODO Formatter in text and send filters started e active to true ✅
-
-              client.sendText(message.from, `${resultStorePromotions.data.items}`)
-            },
-            '3': () => {
-              //TODO Get address with latitude and longitude 🗺️ 📍 
-
-              client.sendText(message.from, `${''}`)
-            },
-            '4': () => {
-              //TODO Formatter
-
-              client.sendText(message.from, `Nossos horários de funcionamento são: ${openClose}`)
-            },
-            '5': () => {
-              client.sendText(message.from, `🔚 *Atendimento encerrado* 🔚`)
+            const choice = await choices[message.body]
+            if (choice) {
+              return choice()
+            } else if (stage === '0') {
+              const choice = choices['0']
+              return choice()
             }
           }
-
-          await choices[message.body]
         })
       }
     }
