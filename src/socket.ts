@@ -22,7 +22,6 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
     console.log('User connected:', socket.id)
 
     const createSession = (storeId: string) => {
-
       create(storeId,
         (base64Qr) => {
           var matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
@@ -56,75 +55,96 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
 
       function start(client: Whatsapp) {
         client.onStateChange((state) => {
-          socket.emit('server:message', 'Status: ' + state)
+          socket.emit('server:status', 'Status: ' + state)
           console.log('State changed: ' + state)
         })
 
         client.onMessage(async (message) => {
-          const saasService = new SaasService()
-
-          const resultStore = await saasService.getStore(storeId)
-          if (resultStore?.error) {
-            throw new Error(resultStore.error)
-          }
-
-          const { name, openClose, latitude, longitude }: IStore = resultStore.data
+          let stage: string = '0'
 
           if (!message.isGroupMsg) {
-            client.sendText(message.from, `
-              👋 Olá, como vai?
-              Eu sou o *assistente virtual* da *${name}*.
-              *Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️
-              ----------------------------------------
-              1️⃣ - Ver cardápio/Fazer pedido
-              2️⃣ - Promoções
-              3️⃣ - Endereço
-              4️⃣ - Horários de funcionamento
-              5️⃣ - Finalizar Atendimento
-              `)
-              .then((result) => {
-                console.log('Result: ', result)
-              })
-              .catch((error) => {
-                console.error('Error when sending: ', error)
-              });
-          }
+            const saasService = new SaasService()
 
-          const choices = {
-            '1': async () => {
-              const resultStoreMenu = await saasService.getMenuByStoreId(storeId)
-              if (resultStoreMenu?.error) {
-                throw new Error(resultStoreMenu.error)
+            const resultStore = await saasService.getStore(storeId)
+            if (resultStore?.error) {
+              throw new Error(resultStore.error)
+            }
+
+            const { name, openClose, latitude, longitude }: IStore = resultStore?.data
+
+            const choices = {
+              '0': () => {
+                client.sendText(message.from, `
+                  👋 Olá, como vai?
+                  Eu sou o *assistente virtual* da *${name}*.
+                  *Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️
+                  ----------------------------------------
+                  1️⃣ - Ver cardápio/Fazer pedido
+                  2️⃣ - Promoções
+                  3️⃣ - Endereço
+                  4️⃣ - Horários de funcionamento
+                  5️⃣ - Finalizar Atendimento
+                  `)
+                  .then((result) => {
+                    console.log('Result: ', result)
+                  })
+                stage = ''
+              },
+              '1': async () => {
+                const resultStoreMenu = await saasService.getMenuByStoreId(storeId)
+                if (resultStoreMenu?.error) {
+                  throw new Error(resultStoreMenu.error)
+                }
+
+                if (!resultStoreMenu?.data?.name) {
+                  client.sendText(message.from, `Ainda não cadastramos nosso cardápio! 🙁}`)
+                }
+
+                client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos!
+                ${process.env.URL + '/' + resultStoreMenu?.data?.name}`)
+              },
+              '2': async () => {
+                const resultStorePromotions = await saasService.getPromotionsByStoreId(storeId)
+                if (resultStorePromotions?.error) {
+                  throw new Error(resultStorePromotions.error)
+                }
+                //TODO Test formatter in text  ✅
+
+                client.sendText(message.from, `✅ ${resultStorePromotions?.data?.items.map((promotion: any) => { promotion.item.name, 'De:', promotion.price, 'Por:', promotion.discountPrice })}`)
+              },
+              '3': () => {
+                //TODO Get address with latitude and longitude 🗺️ 📍 
+
+                client.sendText(message.from, `${'🗺️ 📍'}`)
+              },
+              '4': () => {
+                //TODO Formatter
+
+                client.sendText(message.from, `Nossos horários de funcionamento são: ${openClose}`)
+              },
+              '5': () => {
+                client.sendText(message.from, `🔚 *Atendimento encerrado* 🔚`)
               }
+            }
 
-              client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos!
-              ${process.env.URL + '/' + resultStoreMenu.data.name}`)
-            },
-            '2': async () => {
-              const resultStorePromotions = await saasService.getPromotionsByStoreId(storeId)
-              if (resultStorePromotions?.error) {
-                throw new Error(resultStorePromotions.error)
+            if (stage !== '0') {
+              const messageClient = message.body.trim()
+              const isMsgValid = /[1|2|3|4|5]/.test(messageClient)
+              if (!isMsgValid) {
+                client.sendText(message.from, '❌ *Digite uma opção válida, por favor.* \n⚠️ ```APENAS UMA OPÇÃO POR VEZ``` ⚠️')
+              } else if (!message.isGroupMsg) {
+                return
               }
-              //TODO Formatter in text and send filters started e active to true ✅
+            }
 
-              client.sendText(message.from, `${resultStorePromotions.data.items}`)
-            },
-            '3': () => {
-              //TODO Get address with latitude and longitude 🗺️ 📍 
-
-              client.sendText(message.from, `${''}`)
-            },
-            '4': () => {
-              //TODO Formatter
-
-              client.sendText(message.from, `Nossos horários de funcionamento são: ${openClose}`)
-            },
-            '5': () => {
-              client.sendText(message.from, `🔚 *Atendimento encerrado* 🔚`)
+            const choice = await choices[message.body]
+            if (choice) {
+              return choice()
+            } else if (stage === '0') {
+              const choice = choices['0']
+              return choice()
             }
           }
-
-          await choices[message.body]
         })
       }
     }
@@ -139,7 +159,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
 
     })
 
-    socket.on('client:qrCode', (storeId) => {
+    socket.on('client:qrCode', (storeId: string) => {
       const qrCode = fs.readFileSync(path.resolve(storeId + '.png'), { encoding: 'base64' });
       socket.emit('server:qrCode', 'data:image/png;base64,' + qrCode)
     })
@@ -152,7 +172,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
     })
 
 
-    socket.on('client:delete-session', (storeId) => {
+    socket.on('client:delete-session', (storeId: string) => {
       const files = './tokens/' + storeId
       const qrcodes = storeId + '.png'
       fs.unlinkSync(files)
