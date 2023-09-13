@@ -88,7 +88,6 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                   .then((result) => {
                     console.log('Result: ', result)
                   })
-                stage = ''
               },
               '1': async () => {
                 const resultStoreMenu = await saasService.getMenuByStoreId(storeId)
@@ -97,10 +96,10 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                 }
 
                 if (!resultStoreMenu?.data?.name) {
-                  client.sendText(message.from, `Ainda não cadastramos nosso cardápio! 🙁}`)
+                  return client.sendText(message.from, `Ainda não cadastramos nosso cardápio! 🙁}`)
                 }
 
-                client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos!
+                return client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos!
                 ${process.env.URL + '/' + resultStoreMenu?.data?.name}`)
               },
               '2': async () => {
@@ -108,9 +107,24 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                 if (resultStorePromotions?.error) {
                   throw new Error(resultStorePromotions.error)
                 }
-                //TODO Test formatter in text  ✅
 
-                client.sendText(message.from, `✅ ${resultStorePromotions?.data?.items.map((promotion: any) => { promotion.item.name, 'De:', promotion.price, 'Por:', promotion.discountPrice })}`)
+                if (!resultStorePromotions?.data?.items.length) {
+                  return client.sendText(message.from, `No momento não possuímos promoções ativas! 🙁`)
+                }
+
+                let promotionItems: string = ''
+                for (const item of resultStorePromotions?.data?.items) {
+                  promotionItems += '\n'
+                  promotionItems += `- ${item.item.name}`
+                  promotionItems += '\n'
+                  promotionItems += `De: R$ ${item.price}`
+                  promotionItems += '\n'
+                  promotionItems += `Por: R$ ${item.discountPrice}`
+                  promotionItems += '\n'
+
+                }
+
+                return client.sendText(message.from, `✅ Aqui estão nossas promoções ativas: \n ${promotionItems}`)
               },
               '3': () => {
                 //TODO Get address with latitude and longitude 🗺️ 📍 
@@ -142,6 +156,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
               return choice()
             } else if (stage === '0') {
               const choice = choices['0']
+              stage = ''
               return choice()
             }
           }
