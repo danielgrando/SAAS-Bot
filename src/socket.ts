@@ -2,6 +2,7 @@ import path from "path";
 import { create, Whatsapp, Message, SocketState } from 'venom-bot'
 import { SaasService } from "./services/SaasService";
 import fs from 'fs'
+import { GeoLocationService } from "./services/GeoLocationService";
 
 interface IStore {
   id: string
@@ -121,23 +122,28 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                   promotionItems += '\n'
                   promotionItems += `Por: R$ ${item.discountPrice}`
                   promotionItems += '\n'
-
                 }
 
                 return client.sendText(message.from, `✅ Aqui estão nossas promoções ativas: \n ${promotionItems}`)
               },
-              '3': () => {
-                //TODO Get address with latitude and longitude 🗺️ 📍 
+              '3': async () => {
+                //TODO Get address with latitude and longitude 🗺️ 📍 https://apidocs.geoapify.com/ 
+                console.log(`https://www.google.com.br/maps/@${latitude},${longitude}?entry=ttu`)
+                const geoLocationService = new GeoLocationService()
 
-                client.sendText(message.from, `${'🗺️ 📍'}`)
+                const responseAddressGeoApi = await geoLocationService.getAddress(latitude, longitude)
+                const { formatted } = responseAddressGeoApi?.data?.features[0]?.properties
+
+                client.sendText(message.from, `📍 Estamos localizados no endereço: \n ${formatted}`)
+                client.sendLocation(message.from, latitude, longitude, `${formatted}`)
               },
               '4': () => {
                 //TODO Formatter
 
-                client.sendText(message.from, `Nossos horários de funcionamento são: ${openClose}`)
+                return client.sendText(message.from, `Nossos horários de funcionamento são: ${openClose}`)
               },
               '5': () => {
-                client.sendText(message.from, `🔚 *Atendimento encerrado* 🔚`)
+                return client.sendText(message.from, `🔚 *Atendimento encerrado* 🔚`)
               }
             }
 
