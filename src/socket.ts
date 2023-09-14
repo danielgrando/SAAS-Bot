@@ -12,7 +12,7 @@ interface IStore {
   logo: string
   frontCover: string
   status?: boolean | null
-  openClose?: any
+  openClose?: object
   latitude: string
   longitude: string
   settings?: any
@@ -61,8 +61,6 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
         })
 
         client.onMessage(async (message) => {
-          let stage: string = '0'
-
           if (!message.isGroupMsg) {
             const saasService = new SaasService()
 
@@ -75,17 +73,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
 
             const choices = {
               '0': () => {
-                client.sendText(message.from, `
-                  👋 Olá, como vai?
-                  Eu sou o *assistente virtual* da *${name}*.
-                  *Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️
-                  ----------------------------------------
-                  1️⃣ - Ver cardápio/Fazer pedido
-                  2️⃣ - Promoções
-                  3️⃣ - Endereço
-                  4️⃣ - Horários de funcionamento
-                  5️⃣ - Finalizar Atendimento
-                  `)
+                client.sendText(message.from, `👋 Olá, como vai? \nEu sou o *assistente virtual* da *${name}*. \n*Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️ \n ------------------------------------------------------------- \n 1️⃣ - Ver cardápio/Fazer pedido \n 2️⃣ - Promoções \n 3️⃣ - Endereço \n 4️⃣ - Horários de funcionamento \n 5️⃣ - Finalizar Atendimento`)
                   .then((result) => {
                     console.log('Result: ', result)
                   })
@@ -100,8 +88,8 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                   return client.sendText(message.from, `Ainda não cadastramos nosso cardápio! 🙁}`)
                 }
 
-                return client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos!
-                ${process.env.URL + '/' + resultStoreMenu?.data?.name}`)
+                const menuLink = `${process.env.URL + '/' + resultStoreMenu?.data?.name}`
+                return client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos! \n \n${menuLink}`)
               },
               '2': async () => {
                 const resultStorePromotions = await saasService.getPromotionsByStoreId(storeId)
@@ -116,53 +104,67 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                 let promotionItems: string = ''
                 for (const item of resultStorePromotions?.data?.items) {
                   promotionItems += '\n'
-                  promotionItems += `- ${item.item.name}`
-                  promotionItems += '\n'
-                  promotionItems += `De: R$ ${item.price}`
-                  promotionItems += '\n'
-                  promotionItems += `Por: R$ ${item.discountPrice}`
-                  promotionItems += '\n'
+                  promotionItems += `- ${item.item.name}\n`
+                  promotionItems += `De: R$ ${item.price}\n`
+                  promotionItems += `Por: R$ ${item.discountPrice}\n`
                 }
 
                 return client.sendText(message.from, `✅ Aqui estão nossas promoções ativas: \n ${promotionItems}`)
               },
               '3': async () => {
-                //TODO Get address with latitude and longitude 🗺️ 📍 https://apidocs.geoapify.com/ 
-                console.log(`https://www.google.com.br/maps/@${latitude},${longitude}?entry=ttu`)
+                //📍 https://apidocs.geoapify.com/ 
+
                 const geoLocationService = new GeoLocationService()
 
                 const responseAddressGeoApi = await geoLocationService.getAddress(latitude, longitude)
+                if (responseAddressGeoApi?.error) {
+                  throw new Error(responseAddressGeoApi.error)
+                }
+
                 const { formatted } = responseAddressGeoApi?.data?.features[0]?.properties
 
-                client.sendText(message.from, `📍 Estamos localizados no endereço: \n ${formatted}`)
+                client.sendText(message.from, `📍 Estamos localizados no endereço: \n${formatted}`)
                 client.sendLocation(message.from, latitude, longitude, `${formatted}`)
               },
               '4': () => {
-                //TODO Formatter
+                if (!openClose) {
+                  return client.sendText(message.from, `No momento não cadastramos nossos horários de funcionamento!`)
+                }
 
-                return client.sendText(message.from, `Nossos horários de funcionamento são: ${openClose}`)
+                let daysOpenClose: string = ''
+                for (const [key, value] of Object.entries(openClose)) {
+                  daysOpenClose += '\n'
+                  daysOpenClose += `${key}\n`
+                  daysOpenClose += `Abre: ${value.open}\n`
+                  daysOpenClose += `Fecha: ${value.close}\n`
+                }
+
+                return client.sendText(message.from, `✅ Nossos horários de funcionamento são: \n${daysOpenClose}`)
               },
               '5': () => {
-                return client.sendText(message.from, `🔚 *Atendimento encerrado* 🔚`)
+                return client.sendText(message.from, `🔚 *Atendimento encerrado!* 🔚`)
               }
             }
 
-            if (stage !== '0') {
-              const messageClient = message.body.trim()
-              const isMsgValid = /[1|2|3|4|5]/.test(messageClient)
-              if (!isMsgValid) {
-                client.sendText(message.from, '❌ *Digite uma opção válida, por favor.* \n⚠️ ```APENAS UMA OPÇÃO POR VEZ``` ⚠️')
-              } else if (!message.isGroupMsg) {
-                return
-              }
-            }
+            // let stage: string = '0'
+            // const allDayChatMessages = await client.getAllMessagesInChat(message.from, false, false)
+            // if (stage !== '0') {
+            //   const messageClient = message.body.trim()
+            //   const isMsgValid = /[1|2|3|4|5]/.test(messageClient)
+            //   if (!isMsgValid) {
+            //     return client.sendText(message.from, '❌ *Digite uma opção válida, por favor.* \n⚠️ ```APENAS UMA OPÇÃO POR VEZ``` ⚠️')
+            //   } else if (!message.isGroupMsg) {
+            //     return
+            //   }
+            // }
 
             const choice = await choices[message.body]
             if (choice) {
+              // stage = message.body
               return choice()
-            } else if (stage === '0') {
+            } else {
               const choice = choices['0']
-              stage = ''
+              // stage = ''
               return choice()
             }
           }
