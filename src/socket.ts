@@ -73,10 +73,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
 
             const choices = {
               '0': () => {
-                client.sendText(message.from, `👋 Olá, como vai? \nEu sou o *assistente virtual* da *${name}*. \n*Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️ \n ------------------------------------------------------------- \n 1️⃣ - Ver cardápio/Fazer pedido \n 2️⃣ - Promoções \n 3️⃣ - Endereço \n 4️⃣ - Horários de funcionamento \n 5️⃣ - Finalizar Atendimento`)
-                  .then((result) => {
-                    console.log('Result: ', result)
-                  })
+                return client.sendText(message.from, `👋 Olá, como vai? \nEu sou o *assistente virtual* da *${name}*. \n*Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️ \n ------------------------------------------------------------- \n 1️⃣ - Ver cardápio/Fazer pedido \n 2️⃣ - Promoções \n 3️⃣ - Endereço \n 4️⃣ - Horários de funcionamento \n 5️⃣ - Finalizar Atendimento`)
               },
               '1': async () => {
                 const resultStoreMenu = await saasService.getMenuByStoreId(storeId)
