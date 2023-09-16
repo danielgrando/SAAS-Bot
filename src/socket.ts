@@ -1,22 +1,9 @@
 import path from "path";
-import { create, Whatsapp, Message, SocketState } from 'venom-bot'
+import { create, Whatsapp } from 'venom-bot'
 import { SaasService } from "./services/SaasService";
 import fs from 'fs'
 import { GeoLocationService } from "./services/GeoLocationService";
-
-interface IStore {
-  id: string
-  name: string
-  email: string
-  type: string
-  logo: string
-  frontCover: string
-  status?: boolean | null
-  openClose?: object
-  latitude: string
-  longitude: string
-  settings?: any
-}
+import { IStore } from "./interfaces/IStore";
 
 export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void }) => {
   io.on("connection", (socket) => {
@@ -57,7 +44,6 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
       function start(client: Whatsapp) {
         client.onStateChange((state) => {
           socket.emit('server:status', 'Status: ' + state)
-          console.log('State changed: ' + state)
         })
 
         client.onMessage(async (message) => {
@@ -143,25 +129,11 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
               }
             }
 
-            // let stage: string = '0'
-            // const allDayChatMessages = await client.getAllMessagesInChat(message.from, false, false)
-            // if (stage !== '0') {
-            //   const messageClient = message.body.trim()
-            //   const isMsgValid = /[1|2|3|4|5]/.test(messageClient)
-            //   if (!isMsgValid) {
-            //     return client.sendText(message.from, '❌ *Digite uma opção válida, por favor.* \n⚠️ ```APENAS UMA OPÇÃO POR VEZ``` ⚠️')
-            //   } else if (!message.isGroupMsg) {
-            //     return
-            //   }
-            // }
-
             const choice = await choices[message.body]
             if (choice) {
-              // stage = message.body
               return choice()
             } else {
               const choice = choices['0']
-              // stage = ''
               return choice()
             }
           }
@@ -176,7 +148,6 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
         const qrCode = fs.readFileSync(path.resolve(storeId + '.png'), { encoding: 'base64' });
         socket.emit('server:session', 'data:image/png;base64,' + qrCode)
       }, 10000)
-
     })
 
     socket.on('client:qrCode', (storeId: string) => {
@@ -187,10 +158,19 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
     socket.on('client:list-session', () => {
       const files = fs.readdirSync('./tokens')
       const filesName = files.toString()
-      console.log(filesName)
+
       socket.emit('server:list-session', filesName)
     })
 
+    socket.on('client:status', (storeId: string) => {
+      const allStatus = fs.readdirSync('./tokens')
+
+      const storeInstanceStatus = allStatus.find((storeInstanceStatus) => storeInstanceStatus === storeId)
+      if (storeInstanceStatus) {
+        return socket.emit('server:status', true)
+      }
+      return socket.emit('server:status', false)
+    })
 
     socket.on('client:delete-session', (storeId: string) => {
       const files = './tokens/' + storeId
@@ -201,3 +181,15 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
 
   })
 }
+
+// let stage: string = '0'
+// const allDayChatMessages = await client.getAllMessagesInChat(message.from, false, false)
+// if (stage !== '0') {
+//   const messageClient = message.body.trim()
+//   const isMsgValid = /[1|2|3|4|5]/.test(messageClient)
+//   if (!isMsgValid) {
+//     return client.sendText(message.from, '❌ *Digite uma opção válida, por favor.* \n⚠️ ```APENAS UMA OPÇÃO POR VEZ``` ⚠️')
+//   } else if (!message.isGroupMsg) {
+//     return
+//   }
+// }
