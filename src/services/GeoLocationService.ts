@@ -1,7 +1,7 @@
 import axios from "axios"
 import { ResultRequest } from "../utils/customTypes"
 import { printErrorInService, printInfoMessage } from "../utils/utilsService"
-
+//📍 https://apidocs.geoapify.com/ 
 class GeoLocationService {
   async getAddress(lat: string, long: string): Promise<ResultRequest> {
     try {

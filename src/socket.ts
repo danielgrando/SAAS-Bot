@@ -95,8 +95,6 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                 return client.sendText(message.from, `✅ Aqui estão nossas promoções ativas: \n ${promotionItems}`)
               },
               '3': async () => {
-                //📍 https://apidocs.geoapify.com/ 
-
                 const geoLocationService = new GeoLocationService()
 
                 const responseAddressGeoApi = await geoLocationService.getAddress(latitude, longitude)
@@ -114,9 +112,15 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                   return client.sendText(message.from, `No momento não cadastramos nossos horários de funcionamento!`)
                 }
 
+                const translateDaysOfWeek = (key: number) => {
+                  const days = { 0: "Segunda", 1: "Terça", 2: "Quarta", 3: "Quinta", 4: "Sexta", 5: "Sabádo", 6: "Domingo" }
+                  return days[key]
+                }
+
                 let daysOpenClose: string = ''
-                for (const [key, value] of Object.entries(openClose)) {
+                for (let [key, value] of Object.entries(openClose)) {
                   daysOpenClose += '\n'
+                  key = translateDaysOfWeek(Number(key))
                   daysOpenClose += `${key}\n`
                   daysOpenClose += `Abre: ${value.open}\n`
                   daysOpenClose += `Fecha: ${value.close}\n`
