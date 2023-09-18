@@ -47,7 +47,9 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
         })
 
         client.onMessage(async (message) => {
-          if (!message.isGroupMsg) {
+          const validNumber = await client.checkNumberStatus(message.from)
+
+          if (!message.isGroupMsg && validNumber.numberExists) {
             const saasService = new SaasService()
 
             const resultStore = await saasService.getStore(storeId)
