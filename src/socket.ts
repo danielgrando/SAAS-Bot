@@ -13,10 +13,10 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
       create(storeId,
         (base64Qr) => {
           var matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
-            response: any = {};
+            response: any = {}
 
           if (matches.length !== 3) {
-            return new Error('Invalid input string');
+            return new Error('Invalid input string')
           }
           response.type = matches[1]
           response.data = Buffer.from(matches[2], 'base64')
@@ -28,23 +28,40 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
             'binary',
             function (err) {
               if (err != null) {
-                console.log(err);
+                console.log(err)
               }
             }
           );
         },
       )
         .then((client) => {
-          start(client);
+          start(client)
         })
         .catch((error) => {
-          console.log(error);
+          console.log(error)
+        })
+
+      async function start(client: Whatsapp) {
+        client.onStateChange((state) => {
+          socket.emit('server:status', state)
+          if ('CONFLICT'.includes(state)) client.useHere()
+          if ('UNPAIRED'.includes(state)) client.logout()
+        })
+
+        let time: null | ReturnType<typeof setTimeout> = null
+        client.onStreamChange((state) => {
+          clearTimeout(time)
+          if (state === 'DISCONNECTED' || state === 'SYNCING') {
+            time = setTimeout(() => {
+              client.close()
+            }, 80000)
+          }
         });
 
-      function start(client: Whatsapp) {
-        client.onStateChange((state) => {
-          socket.emit('server:status', 'Status: ' + state)
-        })
+        client.onIncomingCall(async (call) => {
+          console.log(call)
+          client.sendText(call.peerJid, "Sorry, I still can't answer calls")
+        });
 
         client.onMessage(async (message) => {
           const validNumber = await client.checkNumberStatus(message.from)
@@ -73,7 +90,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                   return client.sendText(message.from, `Ainda não cadastramos nosso cardápio! 🙁}`)
                 }
 
-                const menuLink = `${process.env.URL + '/' + resultStoreMenu?.data?.name}`
+                const menuLink = `${process.env.URL + '/menu/' + resultStoreMenu?.data?.name}`
                 return client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos! \n \n${menuLink}`)
               },
               '2': async () => {
