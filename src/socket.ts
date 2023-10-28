@@ -159,8 +159,10 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                 return client.sendText(message.from, `✅ Nossos horários de funcionamento são: \n${daysOpenClose}`)
               },
               '5': async () => {
+                sendNotificationToStore(io, storeId, message.from)
                 client.sendText(message.from, `✅ O estabelecimento foi notificado, aguarde um momento por favor! 😊`)
 
+                await CustomerService.deleteMany({ phone: message.from })
                 await CustomerService.create({ phone: message.from })
               },
               '6': async () => {
@@ -189,6 +191,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
     // https://emojiterra.com/pt/ ❌⚠️
     socket.on('client:create-session', (storeId: string) => {
       createSession(storeId)
+      socket.join(storeId)
       setTimeout(() => {
         const qrCode = fs.readFileSync(path.resolve(storeId + '.png'), { encoding: 'base64' });
         socket.emit('server:session', 'data:image/png;base64,' + qrCode)
@@ -225,6 +228,10 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
     })
 
   })
+}
+
+function sendNotificationToStore(io: any, storeId: string, number: string) {
+  io.to(storeId).emit("serverBot:sendWhatsAppNotification", { number: number.split('@')[0].split('').splice(2).join('') })
 }
 
 // let stage: string = '0'
