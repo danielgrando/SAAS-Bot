@@ -6,6 +6,7 @@ import cors from 'cors'
 import http from 'http'
 import { Server } from 'socket.io'
 import socket from './socket'
+import mongoose from 'mongoose'
 
 const app = express()
 
@@ -25,6 +26,17 @@ app.use(cors())
 app.use(express.json({ type: 'application/json', limit: '10MB' }))
 
 app.use(express.urlencoded({ extended: true }))
+
+async function connectDB() {
+	try {
+		await mongoose.connect(process.env.DATABASE_URL)
+		console.log('Connect to MongoDB!')
+	} catch (error: any) {
+		throw new Error(error)
+	}
+}
+
+connectDB()
 
 app.use((error: Error, request: Request, response: Response, next: NextFunction) => {
 	return response.status(400).json({
