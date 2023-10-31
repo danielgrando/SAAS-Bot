@@ -4,6 +4,13 @@ import { SaasService } from "./services/SaasService";
 import fs from 'fs'
 import { GeoLocationService } from "./services/GeoLocationService";
 import { IStore } from "./interfaces/IStore";
+import { CustomerService } from "./database/schema";
+import dayjs from "dayjs";
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+dayjs.extend(utc)
+dayjs.extend(timezone)
+dayjs.tz.setDefault("America/Brazil")
 
 export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void }) => {
   io.on("connection", (socket) => {
@@ -58,11 +65,6 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
           }
         });
 
-        client.onIncomingCall(async (call) => {
-          console.log(call)
-          client.sendText(call.peerJid, "Sorry, I still can't answer calls")
-        });
-
         client.onMessage(async (message) => {
           const validNumber = await client.checkNumberStatus(message.from)
 
@@ -74,11 +76,20 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
               throw new Error(resultStore.error)
             }
 
+            let customerService = await CustomerService.findOne({ phone: message.from, storeId })
+            if (customerService) {
+              const customerServiceStart = dayjs(customerService.createdAt).add(20, 'minute').format()
+              if (customerServiceStart < dayjs().format()) {
+                await CustomerService.deleteMany({ phone: message.from, storeId })
+                customerService = null
+              }
+            }
+
             const { name, openClose, latitude, longitude }: IStore = resultStore?.data
 
             const choices = {
               '0': () => {
-                return client.sendText(message.from, `👋 Olá, como vai? \nEu sou o *assistente virtual* da *${name}*. \n*Aqui está uma lista de coisas em que posso ajudar ?* 🙋‍♂️ \n ------------------------------------------------------------- \n 1️⃣ - Ver cardápio/Fazer pedido \n 2️⃣ - Promoções \n 3️⃣ - Endereço \n 4️⃣ - Horários de funcionamento \n 5️⃣ - Finalizar Atendimento`)
+                return client.sendText(message.from, `👋 Olá, como vai? \nEu sou o *assistente virtual* da *${name}*. \n*Aqui está uma lista de coisas em que posso ajudar:* 🙋‍♂️ \n ------------------------------------------------------------- \n 1️⃣ - Ver cardápio/Fazer pedido \n 2️⃣ - Promoções \n 3️⃣ - Endereço \n 4️⃣ - Horários de funcionamento \n 5️⃣ - Problemas ou dúvidas\n 6️⃣ - Finalizar Atendimento`)
               },
               '1': async () => {
                 const resultStoreMenu = await saasService.getMenuByStoreId(storeId)
@@ -87,11 +98,11 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                 }
 
                 if (!resultStoreMenu?.data?.name) {
-                  return client.sendText(message.from, `Ainda não cadastramos nosso cardápio! 🙁}`)
+                  return client.sendText(message.from, `Ainda não cadastramos nosso cardápio! 🙁`)
                 }
 
                 const menuLink = `${process.env.URL + '/menu/' + resultStoreMenu?.data?.name}`
-                return client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos! \n \n${menuLink}`)
+                return client.sendText(message.from, `Aqui você pode conferir nosso cardápio completo e também fazer seus pedidos! 😉\n \n${menuLink}`)
               },
               '2': async () => {
                 const resultStorePromotions = await saasService.getPromotionsByStoreId(storeId)
@@ -147,15 +158,28 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
 
                 return client.sendText(message.from, `✅ Nossos horários de funcionamento são: \n${daysOpenClose}`)
               },
-              '5': () => {
+              '5': async () => {
+                sendNotificationToStore(io, storeId, message.from)
+                client.sendText(message.from, `✅ O estabelecimento foi notificado, aguarde um momento por favor! 😊`)
+
+                await CustomerService.deleteMany({ phone: message.from, storeId })
+                await CustomerService.create({ phone: message.from, storeId })
+              },
+              '6': async () => {
+                const customerService = await CustomerService.findOne({ phone: message.from, storeId })
+                if (!customerService) {
+                  return client.sendText(message.from, `✅ Nenhum atendimento foi requisitado! 😊`)
+                }
+                await CustomerService.deleteMany({ phone: message.from, storeId })
+
                 return client.sendText(message.from, `🔚 *Atendimento encerrado!* 🔚`)
               }
             }
-
+            //(choice && !customerService) || (choice?.name === '6')
             const choice = await choices[message.body]
             if (choice) {
               return choice()
-            } else {
+            } else if (!customerService) {
               const choice = choices['0']
               return choice()
             }
@@ -167,6 +191,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
     // https://emojiterra.com/pt/ ❌⚠️
     socket.on('client:create-session', (storeId: string) => {
       createSession(storeId)
+      socket.join(storeId)
       setTimeout(() => {
         const qrCode = fs.readFileSync(path.resolve(storeId + '.png'), { encoding: 'base64' });
         socket.emit('server:session', 'data:image/png;base64,' + qrCode)
@@ -203,6 +228,10 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
     })
 
   })
+}
+
+function sendNotificationToStore(io: any, storeId: string, number: string) {
+  io.to(storeId).emit("serverBot:sendWhatsAppNotification", { number: number.split('@')[0].split('').splice(2).join('') })
 }
 
 // let stage: string = '0'
