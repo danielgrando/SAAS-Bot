@@ -76,11 +76,11 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
               throw new Error(resultStore.error)
             }
 
-            let customerService = await CustomerService.findOne({ phone: message.from })
+            let customerService = await CustomerService.findOne({ phone: message.from, storeId })
             if (customerService) {
               const customerServiceStart = dayjs(customerService.createdAt).add(20, 'minute').format()
               if (customerServiceStart < dayjs().format()) {
-                await CustomerService.deleteMany({ phone: message.from })
+                await CustomerService.deleteMany({ phone: message.from, storeId })
                 customerService = null
               }
             }
@@ -89,7 +89,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
 
             const choices = {
               '0': () => {
-                return client.sendText(message.from, `👋 Olá, como vai? \nEu sou o *assistente virtual* da *${name}*. \n*Aqui está uma lista de coisas em que posso ajudar: * 🙋‍♂️ \n ------------------------------------------------------------- \n 1️⃣ - Ver cardápio/Fazer pedido \n 2️⃣ - Promoções \n 3️⃣ - Endereço \n 4️⃣ - Horários de funcionamento \n 5️⃣ - Problema com o pedido ou dúvida\n 6️⃣ - Finalizar Atendimento`)
+                return client.sendText(message.from, `👋 Olá, como vai? \nEu sou o *assistente virtual* da *${name}*. \n*Aqui está uma lista de coisas em que posso ajudar:* 🙋‍♂️ \n ------------------------------------------------------------- \n 1️⃣ - Ver cardápio/Fazer pedido \n 2️⃣ - Promoções \n 3️⃣ - Endereço \n 4️⃣ - Horários de funcionamento \n 5️⃣ - Problemas ou dúvidas\n 6️⃣ - Finalizar Atendimento`)
               },
               '1': async () => {
                 const resultStoreMenu = await saasService.getMenuByStoreId(storeId)
@@ -102,7 +102,7 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                 }
 
                 const menuLink = `${process.env.URL + '/menu/' + resultStoreMenu?.data?.name}`
-                return client.sendText(message.from, `Aqui você pode ver nosso cardápio completo e também fazer seus pedidos! \n \n${menuLink}`)
+                return client.sendText(message.from, `Aqui você pode conferir nosso cardápio completo e também fazer seus pedidos! 😉\n \n${menuLink}`)
               },
               '2': async () => {
                 const resultStorePromotions = await saasService.getPromotionsByStoreId(storeId)
@@ -162,15 +162,15 @@ export default (io: { on: (arg0: string, arg1: (socket: any) => void) => void })
                 sendNotificationToStore(io, storeId, message.from)
                 client.sendText(message.from, `✅ O estabelecimento foi notificado, aguarde um momento por favor! 😊`)
 
-                await CustomerService.deleteMany({ phone: message.from })
-                await CustomerService.create({ phone: message.from })
+                await CustomerService.deleteMany({ phone: message.from, storeId })
+                await CustomerService.create({ phone: message.from, storeId })
               },
               '6': async () => {
-                const customerService = await CustomerService.findOne({ phone: message.from })
+                const customerService = await CustomerService.findOne({ phone: message.from, storeId })
                 if (!customerService) {
                   return client.sendText(message.from, `✅ Nenhum atendimento foi requisitado! 😊`)
                 }
-                await CustomerService.deleteMany({ phone: message.from })
+                await CustomerService.deleteMany({ phone: message.from, storeId })
 
                 return client.sendText(message.from, `🔚 *Atendimento encerrado!* 🔚`)
               }

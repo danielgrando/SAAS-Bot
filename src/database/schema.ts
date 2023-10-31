@@ -6,6 +6,10 @@ const customerServiceSchema = new Schema({
     type: String,
     required: true
   },
+  storeId: {
+    type: String,
+    required: true
+  }
 }, { timestamps: true })
 
 const CustomerService = mongoose.model('CustomerService', customerServiceSchema)
