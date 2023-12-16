@@ -1,5 +1,5 @@
 
-exports.jsonStringify = (data) => {
+function jsonStringify(data) {
   try {
     return JSON.stringify(data)
   } catch {
@@ -7,18 +7,18 @@ exports.jsonStringify = (data) => {
   }
 }
 
-exports.printErrorInService = (error, service, method) => {
+module.exports.printErrorInService = (error, service, method) => {
   console.error(`
   ######################################################################################
     An error occurred in the request!
     [SERVICE: ${service}  METHOD: ${method}]
 
 
-    REQUEST CONFIG: ${this.jsonStringify(error?.response?.config)}
+    REQUEST CONFIG: ${jsonStringify(error?.response?.config)}
 
-    REQUEST DATA: ${this.jsonStringify(error?.response?.data || error?.response || undefined)}
+    REQUEST DATA: ${jsonStringify(error?.response?.data || error?.response || undefined)}
   
-    ERROR MESSAGE: ${this.jsonStringify(error?.response?.message)}
+    ERROR MESSAGE: ${jsonStringify(error?.response?.message)}
 
     ERROR: ${jsonStringify(error)}
   ######################################################################################
