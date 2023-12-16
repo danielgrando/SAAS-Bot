@@ -14,4 +14,4 @@ RUN npm install
 USER node
 EXPOSE ${PORT}
 
-CMD yarn start
+CMD npm run start

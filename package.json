@@ -6,31 +6,11 @@
     "scripts": {
         "start": "node src/server.js",
         "dev": "nodemon",
-        "format:check": "prettier --check .",
-        "format:write": "prettier --write .",
-        "lint:check": "eslint .",
-        "lint:fix": "eslint --fix .",
-        "test": "mocha tests/*.test.js --exit",
-        "configure-husky": "npx husky install && npx husky add .husky/pre-commit \"npx --no-install lint-staged\""
+        "test": "mocha tests/*.test.js --exit"
     },
-    "husky": {
-        "hooks": {
-            "pre-commit": "lint-staged"
-        }
-    },
-    "lint-staged": {
-        "*.{js,jsx}": [
-            "prettier --write",
-            "git add"
-        ],
-        "*.{html,css,less,ejs}": [
-            "prettier --write",
-            "git add"
-        ]
-    },
-    "repository": "git@github.com:salman0ansari/whatsapp-api-nodejs.git",
-    "author": "Mohd Salman Ansari <salman0ansariii@gmail.com>",
-    "license": "MIT",
+    "repository": "",
+    "author": "",
+    "license": "",
     "dependencies": {
         "@whiskeysockets/baileys": "^6.1.0",
         "@adiwajshing/keyed-db": "^0.2.4",
