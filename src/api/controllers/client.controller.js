@@ -46,10 +46,12 @@ exports.returnMessageToUserByWebhook = async (req, res) => {
         }
 
         if (!resultStoreMenu?.data?.name) {
-          await WhatsAppInstances[storeId].sendTextMessage(
+          const data = await WhatsAppInstances[storeId].sendTextMessage(
             from,
             `Ainda não cadastramos nosso cardápio! 🙁`
           )
+
+          return res.status(201).json({ error: false, data: data })
         }
 
         const menuLink = `${config.Url + '/menu/' + resultStoreMenu?.data?.name}`
