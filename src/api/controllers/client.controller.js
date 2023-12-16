@@ -184,7 +184,3 @@ exports.returnMessageToUserByWebhook = async (req, res) => {
     return res.status(201).json({ error: false, data: 'UP' })
   }
 }
-
-function sendNotificationToStore(io, storeId, number) {
-  io.to(storeId).emit("serverBot:sendWhatsAppNotification", { number: number.split('@')[0].split('').splice(2).join('') })
-}
