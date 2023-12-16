@@ -1,35 +1,61 @@
 {
-  "name": "saas-bot",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "start": "tsx dist/server.js",
-    "build": "tsc --build",
-    "dev": "tsx watch src/server.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "keywords": [],
-  "license": "ISC",
-  "dependencies": {
-    "axios": "^1.4.0",
-    "cors": "^2.8.5",
-    "dayjs": "^1.11.10",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "express-async-errors": "^3.1.1",
-    "mongoose": "^7.6.3",
-    "socket.io": "^4.7.2",
-    "venom-bot": "^5.0.17"
-  },
-  "devDependencies": {
-    "@types/axios": "^0.14.0",
-    "@types/cors": "^2.8.13",
-    "@types/express": "^4.17.17",
-    "@types/node": "^20.5.1",
-    "@types/socket.io": "^3.0.2",
-    "tsx": "^3.12.7",
-    "typescript": "^5.1.6"
-  }
+    "name": "whatsapp-api-nodejs",
+    "version": "3.0.8",
+    "description": "whatsapp-api-nodejs is builton top of Baileys-MD.",
+    "main": "server.js",
+    "scripts": {
+        "start": "node src/server.js",
+        "dev": "nodemon",
+        "format:check": "prettier --check .",
+        "format:write": "prettier --write .",
+        "lint:check": "eslint .",
+        "lint:fix": "eslint --fix .",
+        "test": "mocha tests/*.test.js --exit",
+        "configure-husky": "npx husky install && npx husky add .husky/pre-commit \"npx --no-install lint-staged\""
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "lint-staged"
+        }
+    },
+    "lint-staged": {
+        "*.{js,jsx}": [
+            "prettier --write",
+            "git add"
+        ],
+        "*.{html,css,less,ejs}": [
+            "prettier --write",
+            "git add"
+        ]
+    },
+    "repository": "git@github.com:salman0ansari/whatsapp-api-nodejs.git",
+    "author": "Mohd Salman Ansari <salman0ansariii@gmail.com>",
+    "license": "MIT",
+    "dependencies": {
+        "@whiskeysockets/baileys": "^6.1.0",
+        "@adiwajshing/keyed-db": "^0.2.4",
+        "axios": "^1.1.3",
+        "dotenv": "^16.0.3",
+        "ejs": "^3.1.7",
+        "express": "^4.18.2",
+        "express-exception-handler": "^1.3.23",
+        "link-preview-js": "^3.0.0",
+        "mongodb": "^4.12.1",
+        "mongoose": "^6.7.4",
+        "multer": "^1.4.5-lts.1",
+        "pino": "^8.7.0",
+        "qrcode": "^1.5.1",
+        "sharp": "^0.30.5",
+        "uuid": "^9.0.0"
+    },
+    "devDependencies": {
+        "eslint": "^8.28.0",
+        "eslint-config-prettier": "^8.5.0",
+        "husky": "^8.0.2",
+        "lint-staged": "^13.0.4",
+        "mocha": "^10.1.0",
+        "nodemon": "^2.0.20",
+        "prettier": "^2.8.0",
+        "supertest": "^6.3.1"
+    }
 }
