@@ -1415,15 +1415,5 @@
 				]
 			}
 		}
-	],
-	"variable": [
-		{
-			"key": "baseUrl",
-			"value": "localhost:3334"
-		},
-		{
-			"key": "instance_key",
-			"value": "123"
-		}
 	]
 }

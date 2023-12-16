@@ -43,10 +43,23 @@ const WEBHOOK_ALLOWED_EVENTS = process.env.WEBHOOK_ALLOWED_EVENTS?.split(',') ||
 const MARK_MESSAGES_READ = !!(
     process.env.MARK_MESSAGES_READ && process.env.MARK_MESSAGES_READ === 'true'
 )
+// SAAS CORE 
+const SAAS_URL = process.env.SAAS_URL ? process.env.SAAS_URL : "http://localhost:3333"
+
+//GEO LOCATION
+const GEO_API_KEY = process.env.GEO_API_KEY ? process.env.GEO_API_KEY : "b0be85ec490f4e4bbfc6281365435603"
+const GEO_API_URL = process.env.GEO_API_URL ? process.env.GEO_API_URL : "https://api.geoapify.com"
+
+//FRONT URL 
+const URL = process.env.URL ? process.env.URL : "https://gradytest.netlify.app"
 
 module.exports = {
     port: PORT,
     token: TOKEN,
+    SaasUrl: SAAS_URL,
+    GeoApiKey: GEO_API_KEY,
+    GeoApiUrl: GEO_API_URL,
+    Url: URL,
     restoreSessionsOnStartup: RESTORE_SESSIONS_ON_START_UP,
     appUrl: APP_URL,
     log: {
