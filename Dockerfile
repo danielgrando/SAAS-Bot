@@ -1,7 +1,7 @@
 FROM node:19-alpine
 
 ARG _WORKDIR=/home/node/app
-ARG PORT=3333
+ARG PORT=3334
 
 USER root
 RUN apk add git

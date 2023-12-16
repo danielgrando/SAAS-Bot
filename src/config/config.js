@@ -1,5 +1,5 @@
 // Port number
-const PORT = process.env.PORT || '3333'
+const PORT = process.env.PORT || '3334'
 const TOKEN = process.env.TOKEN || ''
 const PROTECT_ROUTES = !!(
     process.env.PROTECT_ROUTES && process.env.PROTECT_ROUTES === 'true'
