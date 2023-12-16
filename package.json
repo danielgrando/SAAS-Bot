@@ -1,20 +1,22 @@
 {
     "name": "whatsapp-api-nodejs",
-    "version": "3.0.8",
-    "description": "whatsapp-api-nodejs is builton top of Baileys-MD.",
+    "version": "1.0.0",
+    "description": "SAAS Bot",
     "main": "server.js",
     "scripts": {
         "start": "node src/server.js",
         "dev": "nodemon",
         "test": "mocha tests/*.test.js --exit"
     },
+    "keywords": [],
     "repository": "",
     "author": "",
     "license": "",
     "dependencies": {
-        "@whiskeysockets/baileys": "^6.1.0",
         "@adiwajshing/keyed-db": "^0.2.4",
+        "@whiskeysockets/baileys": "^6.1.0",
         "axios": "^1.1.3",
+        "dayjs": "^1.11.10",
         "dotenv": "^16.0.3",
         "ejs": "^3.1.7",
         "express": "^4.18.2",
@@ -29,13 +31,9 @@
         "uuid": "^9.0.0"
     },
     "devDependencies": {
-        "eslint": "^8.28.0",
-        "eslint-config-prettier": "^8.5.0",
-        "husky": "^8.0.2",
         "lint-staged": "^13.0.4",
         "mocha": "^10.1.0",
         "nodemon": "^2.0.20",
-        "prettier": "^2.8.0",
         "supertest": "^6.3.1"
     }
 }
