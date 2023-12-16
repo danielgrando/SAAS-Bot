@@ -46,10 +46,12 @@ exports.returnMessageToUserByWebhook = async (req, res) => {
         }
 
         if (!resultStoreMenu?.data?.name) {
-          await WhatsAppInstances[storeId].sendTextMessage(
+          const data = await WhatsAppInstances[storeId].sendTextMessage(
             from,
             `Ainda não cadastramos nosso cardápio! 🙁`
           )
+
+          return res.status(201).json({ error: false, data: data })
         }
 
         const menuLink = `${config.Url + '/menu/' + resultStoreMenu?.data?.name}`
@@ -181,8 +183,4 @@ exports.returnMessageToUserByWebhook = async (req, res) => {
 
     return res.status(201).json({ error: false, data: 'UP' })
   }
-}
-
-function sendNotificationToStore(io, storeId, number) {
-  io.to(storeId).emit("serverBot:sendWhatsAppNotification", { number: number.split('@')[0].split('').splice(2).join('') })
 }
