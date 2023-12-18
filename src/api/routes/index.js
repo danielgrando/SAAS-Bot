@@ -14,6 +14,6 @@ router.use('/message', messageRoutes)
 router.use('/group', groupRoutes)
 router.use('/misc', miscRoutes)
 router.use('/webhook', clientRoutes)
-router.use('/events', (req, res) => eventsRoutes(req, res))
+router.use('/events', eventsRoutes)
 
 module.exports = router

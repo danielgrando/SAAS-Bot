@@ -50,11 +50,11 @@ module.exports.addEvent = async (req, res) => {
 
   if (!webhook) { res.json(newEvent) }
 
-  return sendEventsToAll(newEvent.storeId)
+  return sendEventsToAll(newEvent.storeId, phone)
 }
 
-async function sendEventsToAll(storeId) {
-  const findServiceByStoreId = await CustomerService.findOne({ storeId })
+async function sendEventsToAll(storeId, phone) {
+  const findServiceByStoreId = await CustomerService.findOne({ storeId, phone })
 
   const clientsByStore = clients.filter(client => client.storeId === storeId)
   clientsByStore.forEach(client => client.res.write(`${JSON.stringify(findServiceByStoreId)}`))
