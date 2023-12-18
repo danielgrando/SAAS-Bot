@@ -7,11 +7,11 @@ const dayjs = require('dayjs')
 
 exports.returnMessageToUserByWebhook = async (req, res) => {
   if (req.body?.type.toLowerCase() === 'message') {
-    const message = req.body.body?.message?.extendedTextMessage?.text
+    const message = req.body.body?.message?.extendedTextMessage?.text || req.body.body?.message?.conversation
     const storeId = req.body.instanceKey
-    const from = req.body.body.key.remoteJid
+    const from = req.body?.body?.key?.remoteJid
 
-    console.log(message)
+    console.log('extendedTextMessage: ', req.body.body?.message?.extendedTextMessage?.text, 'message: ', req.body.body?.message?.conversation)
 
     const saasService = new SaasService()
     const resultStore = await saasService.getStore(storeId)
