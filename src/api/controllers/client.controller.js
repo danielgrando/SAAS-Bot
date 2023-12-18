@@ -34,7 +34,7 @@ exports.returnMessageToUserByWebhook = async (req, res) => {
       '0': async () => {
         const data = await WhatsAppInstances[storeId].sendTextMessage(
           from,
-          `👋 Olá, como vai? \nEu sou o *assistente virtual* da *${name}*. \n*Aqui está uma lista de coisas em que posso ajudar:* 🙋‍♂️ \n ------------------------------------------------------------- \n 1️⃣ - Ver cardápio/Fazer pedido \n 2️⃣ - Promoções \n 3️⃣ - Endereço \n 4️⃣ - Horários de funcionamento \n 5️⃣ - Problemas ou dúvidas\n 6️⃣ - Finalizar Atendimento`
+          `👋 Olá, como vai? \nEu sou o *assistente virtual* da *${name}*. \n*Aqui está uma lista de coisas em que posso ajudar:* 🙋‍♂️ \n ------------------------------------------------------------- \n 1️⃣ - Ver cardápio/Fazer pedido \n 2️⃣ - Promoções \n 3️⃣ - Endereço \n 4️⃣ - Horários de funcionamento \n 5️⃣ - Fazer reserva \n 6️⃣ - Problemas ou dúvidas\n 7️⃣ - Finalizar Atendimento`
         )
 
         return res.status(201).json({ error: false, data: data })
@@ -142,6 +142,16 @@ exports.returnMessageToUserByWebhook = async (req, res) => {
         return res.status(201).json({ error: false, data: data })
       },
       '5': async () => {
+        //TODO fazer chamada para link de reserva
+
+        const data = await WhatsAppInstances[storeId].sendTextMessage(
+          from,
+          `✅ Essa funcionalidade logo estará disponível!`
+        )
+
+        return res.status(201).json({ error: false, data: data })
+      },
+      '6': async () => {
         const req = { body: { storeId, phone: from, webhook: true } }
         await events.addEvent(req)
 
@@ -152,7 +162,7 @@ exports.returnMessageToUserByWebhook = async (req, res) => {
 
         return res.status(201).json({ error: false, data: data })
       },
-      '6': async () => {
+      '7': async () => {
         const customerService = await CustomerService.findOne({ phone: from, storeId })
         if (!customerService) {
           const data = await WhatsAppInstances[storeId].sendTextMessage(
