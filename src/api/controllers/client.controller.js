@@ -142,13 +142,10 @@ exports.returnMessageToUserByWebhook = async (req, res) => {
         return res.status(201).json({ error: false, data: data })
       },
       '5': async () => {
-        //TODO fazer chamada para link de reserva
-
         const data = await WhatsAppInstances[storeId].sendTextMessage(
           from,
-          `✅ Essa funcionalidade logo estará disponível!`
+          `✅ Aqui você pode realizar sua reserva como também conhecer nosso cardápio: \n\n${config.Url}/waitlist/${storeId}`
         )
-
         return res.status(201).json({ error: false, data: data })
       },
       '6': async () => {
